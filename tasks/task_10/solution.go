@@ -1,11 +1,12 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -197,10 +198,11 @@ func (h *httpHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	if list == nil {
 		list = []Task{}
 	}
-	sort.Slice(list, func(i, j int) bool {
-		return !list[i].UpdatedAt.Equal(list[j].UpdatedAt) &&
-			list[i].UpdatedAt.After(list[j].UpdatedAt) ||
-			list[i].ID < list[j].ID
+	slices.SortFunc(list, func(a, b Task) int {
+		if c := b.UpdatedAt.Compare(a.UpdatedAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.ID, b.ID)
 	})
 
 	writeJSON(w, http.StatusOK, list)
